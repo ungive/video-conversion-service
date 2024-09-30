@@ -111,9 +111,11 @@ export default async function routes(server: FastifyInstance) {
       }
 
       // Send the response
+      const filename = `video-${token.substring(0, 8)}.gif`
       return reply
         .code(200)
         .type('image/gif')
+        .header('Content-Disposition', 'filename=' + filename)
         .send(createReadStream(file))
     }
   })
