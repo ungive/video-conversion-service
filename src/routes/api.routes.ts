@@ -67,7 +67,7 @@ export default async function routes(server: FastifyInstance) {
 
     // Send the token
     return await reply.send({
-      url: `${server.config.env.SERVER_HOST}/convert?token=${token}`,
+      url: `${server.config.env.SERVER_BASE_URL}/convert?token=${token}`,
       token,
       expires,
       key

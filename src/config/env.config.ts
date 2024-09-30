@@ -6,7 +6,7 @@ import { envious } from '@pitininja/envious'
 
 export const envSchema = Type.Object({
   // This server's hostname as it's used from the outside
-  SERVER_HOST: Type.String({ pattern: "(http|https):\/\/[^\/]+" }),
+  SERVER_BASE_URL: Type.String({ pattern: "(http|https):\/\/.+[^\/]$" }),
   // Comma-separated list of whitelisted hostnames
   SOURCE_HOSTNAME_WHITELIST: Type.String(),
   // Maximum width and height (size) of output videos in pixels
