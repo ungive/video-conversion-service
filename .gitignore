@@ -1,0 +1,9 @@
+/level
+/.vscode
+/node_modules
+/.env
+
+# misc
+*.mp4
+*.gif
+/*.txt

@@ -1,0 +1,19 @@
+{
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "ts-node": {
+    "files": true
+  },
+  "files": [
+    "src/index.ts",
+    "src/routes/api.routes.ts",
+    "typings/global.d.ts"
+  ],
+  "compilerOptions": {
+    "typeRoots": [
+      "./node_modules/@types",
+      "./typings"
+    ],
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+  }
+}
