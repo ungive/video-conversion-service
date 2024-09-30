@@ -15,5 +15,6 @@
     ],
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
+    "outDir": "dist"
   }
 }

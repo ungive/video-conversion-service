@@ -1,0 +1,11 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    ports:
+      - 3000:80
+    env_file: .env
+    environment:
+      - NODE_ENV=production
