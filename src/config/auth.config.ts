@@ -26,7 +26,7 @@ export async function configureAuth(server: FastifyInstance) {
       }
     },
     authenticate: {
-      realm: 'gif-conversion-api'
+      realm: 'video-conversion-service'
     }
   })
 }
