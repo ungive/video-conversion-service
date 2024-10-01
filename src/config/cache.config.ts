@@ -36,7 +36,6 @@ export async function configureCache(server: FastifyInstance) {
     },
     // Dispose images by deleting the corresponding temporary file
     dispose: (value: string, key: StringifiedJSON) => {
-      console.log('dispose', value, JSON.parse(key))
       try {
         fs.unlinkSync(value)
       }
