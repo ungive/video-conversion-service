@@ -57,7 +57,7 @@ Successful response (status code 200):
 
 ```json
 {
-  "url": "https://api.example.com/convert?token=6lXiknBhnF1a7C3njKZDY3",
+  "url": "https://api.example.com/convert.gif?token=6lXiknBhnF1a7C3njKZDY3",
   "token": "6lXiknBhnF1a7C3njKZDY3",
   "expires": 1727727055,
   "key": {
@@ -86,8 +86,15 @@ This endpoint converts the resource for the given token
 to the target output format.
 
 ```
-GET /convert
+GET /convert[:ext]
 ```
+
+Path parameters:
+
+- `:ext` (optional): File extension to communicate the output format.
+  This might be needed by consumers of the URl in some contexts
+  (e.g. for the GIF to properly show in a Discord status).
+  The extension must be identical to the output format `ofm`.
 
 Required query parameters:
 
@@ -96,7 +103,7 @@ Required query parameters:
 Example request:
 
 ```
-https://api.example.com/convert?token=6lXiknBhnF1a7C3njKZDY3
+https://api.example.com/convert.gif?token=6lXiknBhnF1a7C3njKZDY3
 ```
 
 Response:

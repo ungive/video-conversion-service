@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify"
 import { Type, type Static } from '@fastify/type-provider-typebox'
-import { conversionKeySchema, ConversionKey, ContentFormat } from '../lib/types'
+import { conversionKeySchema, ConversionKey, ContentFormat, outputFormatSchema } from '../lib/types'
 import { retry, generateRandomToken } from "../lib/util"
 import fs, { createReadStream } from 'fs'
 import stringify from "json-stringify-deterministic"
@@ -66,8 +66,9 @@ export default async function routes(server: FastifyInstance) {
     const expires = now + ttl
 
     // Send the token
+    const baseUrl = server.config.env.SERVER_BASE_URL
     return await reply.send({
-      url: `${server.config.env.SERVER_BASE_URL}/convert?token=${token}`,
+      url: `${baseUrl}/convert.${key.ofm}?token=${token}`,
       token,
       expires,
       key
@@ -78,11 +79,22 @@ export default async function routes(server: FastifyInstance) {
   const convertQuerystringSchema = Type.Object({
     token: Type.String()
   })
+  const convertParamsSchema = Type.Object({
+    ext: Type.Union([
+      Type.Literal(''),
+      Type.TemplateLiteral([
+        Type.Literal('.'),
+        outputFormatSchema
+      ])
+    ])
+  })
   server.get<{
-    Querystring: Static<typeof convertQuerystringSchema>
-  }>('/convert', {
+    Querystring: Static<typeof convertQuerystringSchema>,
+    Params: Static<typeof convertParamsSchema>,
+  }>('/convert:ext', {
     schema: {
-      querystring: convertQuerystringSchema
+      querystring: convertQuerystringSchema,
+      params: convertParamsSchema
     },
     handler: async (request, reply) => {
       const token = request.query.token
@@ -91,6 +103,12 @@ export default async function routes(server: FastifyInstance) {
       const key: ConversionKey | undefined = server.tokens.get(token)
       if (typeof key === 'undefined') {
         throw new Error("invalid token")
+      }
+
+      // Ensure the extension is identical to the output format
+      if (request.params.ext.length > 0
+        && !request.params.ext.endsWith(key.ofm)) {
+        throw new Error("the extension must be identical to the output format")
       }
 
       // Fetch the URL from the cache or fetch it again
