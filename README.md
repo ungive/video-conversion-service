@@ -50,6 +50,10 @@ Required query parameters:
 
 Optional query parameters:
 
+- `pre`: Whether to preload the conversion result in the background
+  instead of downloading and starting conversion on the first request.
+  If requests to the convert endpoint are delayed,
+  setting this is recommended
 - `osz`: The target output video size. If not specified,
   the original video size or the server's maximum output size
   is used, whichever is smaller

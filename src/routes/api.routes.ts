@@ -65,6 +65,11 @@ export default async function routes(server: FastifyInstance) {
     const now = Math.floor(new Date().getTime() / 1000)
     const expires = now + ttl
 
+    // Start converting the video in the background
+    if (request.query.pre === true) {
+      server.cache.fetch(stringify(key))
+    }
+
     // Send the token
     const baseUrl = server.config.env.SERVER_BASE_URL
     return await reply.send({

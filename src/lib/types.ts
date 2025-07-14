@@ -25,6 +25,8 @@ export const conversionKeySchema = Type.Object({
   ifm: inputFormatSchema,
   // The output image format
   ofm: outputFormatSchema,
+  // Whether to preload the conversion result in the background
+  pre: Type.Optional(Type.Boolean()),
   // The target output size
   osz: Type.Optional(Type.Integer({ minimum: 1 })),
   // The target output frame rate
