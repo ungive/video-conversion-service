@@ -1,4 +1,3 @@
-FROM jrottenberg/ffmpeg:4.1-alpine AS ffmpeg
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json .
@@ -8,7 +7,7 @@ COPY . .
 RUN yarn run build
 
 FROM node:20-alpine AS production
-COPY --from=ffmpeg / /
+RUN apk add --no-cache ffmpeg
 WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
