@@ -1,8 +1,9 @@
+import path from "node:path"
+import autoload from '@fastify/autoload'
 import { FastifyInstance } from "fastify"
 import { configureAuth } from "./auth.config"
-import path from "path"
-import autoload from '@fastify/autoload'
 import { configureCache } from "./cache.config"
+import { configureMetrics } from "./metrics.config"
 
 export async function configureServer(server: FastifyInstance) {
   // Function to check if the given hostname is whitelisted in the environment
@@ -16,6 +17,8 @@ export async function configureServer(server: FastifyInstance) {
   await configureCache(server)
   // Register authentication
   await configureAuth(server)
+  // Configure metrics
+  await configureMetrics(server)
   // Register all routes
   await server.register(autoload, {
     dir: path.join(__dirname, '..', 'routes')
