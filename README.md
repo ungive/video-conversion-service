@@ -7,9 +7,10 @@ and play a song with TIDAL that has an animated cover image.
 
 ## Supported conversions
 
-```
-mp4 to gif
-```
+|Input|Output|
+|-|-|
+|`mp4`|`gif`|
+|`m3u8`|`gif`|
 
 More to be added in the feature, if the need arises.
 
@@ -46,6 +47,17 @@ Required query parameters:
 - `url`: The URL from which to fetch the video resource
 - `ifm`: The input format of the this remote video resource
 - `ofm`: The target output format to which to convert the video
+
+Optional query parameters:
+
+- `osz`: The target output video size. If not specified,
+  the original video size or the server's maximum output size
+  is used, whichever is smaller
+- `ofr`: The target output frame rate. If not specified,
+  the original video frame rate or the server's maximum output frame rate
+  is used, whichever is smaller
+- `out_gif_colors`: Parameter specific for GIF output:
+  Sets the number of colors to use. Useful to influence output size
 
 Example request:
 
