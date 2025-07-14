@@ -66,7 +66,8 @@ export async function fetchConvertedContent(
   }
   switch (key.ofm) {
     case "gif": return fetchRemoteVideoToGif(key, {
-      maxSize: server.config.env.MAXIMUM_OUTPUT_SIZE
+      maxSize: server.config.env.MAXIMUM_OUTPUT_SIZE,
+      maxFramerate: server.config.env.MAXIMUM_OUTPUT_FRAMERATE,
     })
   }
 }

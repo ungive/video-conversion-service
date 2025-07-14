@@ -1,9 +1,10 @@
 import { createTempFile, deferrable, TmpFile } from "../lib/util"
-import { createReadStream, createWriteStream } from "fs"
-import { fetchRemoteContent } from "../lib/fetch"
-import { ConversionKey, formatToFfmpegFormat, formatToHttpContentType, VideoConversionOptions } from "../lib/types"
+import { createWriteStream, ReadStream } from "fs"
+import { ConversionKey, formatToFfmpegFormat, VideoConversionOptions } from "../lib/types"
 import internal, { Readable } from "stream"
 import ffmpeg from 'fluent-ffmpeg'
+import { inputDefault } from './input/default'
+import { inputM3u8 } from './input/m3u8'
 
 /**
  * Converts a given video input to a GIF.
@@ -14,27 +15,27 @@ import ffmpeg from 'fluent-ffmpeg'
 export async function convertVideoToGif(
   inputStream: string | Readable,
   outputStream: internal.Writable,
-  opts: VideoConversionOptions
+  key: ConversionKey,
+  opts: VideoConversionOptions,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    // Maximum dimensions
-    const s = opts.maxSize
+    const size = Math.max(1, Math.min(key.osz || opts.maxSize, opts.maxSize))
+    const fps = Math.max(1, Math.min(key.ofr || opts.maxFramerate, opts.maxFramerate))
+    const colors = key.out_gif_colors || 32
     // Useful resources:
     // https://stackoverflow.com/a/43116993/6748004
     // https://superuser.com/a/556031
     // https://superuser.com/a/1695537
     ffmpeg()
       .input(inputStream)
-      .inputFormat(opts.ffmpegInputFormat)
+      .inputFormat(formatToFfmpegFormat(key.ifm))
       .videoFilters([
-        `scale=w='if(gt(dar,${s}/${s}),min(${s},iw*sar),2*trunc(iw*sar*oh/ih/2))':h='if(gt(dar,${s}/${s}),2*trunc(ih*ow/iw/sar/2),min(${s},ih))'`,
+        `scale=w='if(gt(dar,${size}/${size}),min(${size},iw*sar),2*trunc(iw*sar*oh/ih/2))':h='if(gt(dar,${size}/${size}),2*trunc(ih*ow/iw/sar/2),min(${size},ih))'`,
+        fps ? `fps=${fps}` : null,
         'split[s0][s1]',
-        '[s0]palettegen=max_colors=32[p]',
+        `[s0]palettegen=max_colors=${colors}[p]`,
         '[s1][p]paletteuse=dither=bayer'
-      ])
-      .outputOptions([
-        '-loop 0' // infinite loop
-      ])
+      ].filter(v => typeof v === 'string'))
       .outputFormat('gif')
       .on('end', () => {
         resolve()
@@ -55,14 +56,11 @@ export async function convertVideoToGif(
  */
 export async function fetchRemoteVideoToGif(
   key: ConversionKey,
-  opts: {
-    maxSize: number
-  }
+  opts: VideoConversionOptions
 ): Promise<string> {
   return deferrable(async (defer) => {
 
-    // Create two temporary files
-    // One for the video file, one for the GIF
+    // Create temporary files for the video and resulting GIF
     let vid: TmpFile
     let gif: TmpFile
     try {
@@ -75,30 +73,23 @@ export async function fetchRemoteVideoToGif(
       throw new Error('failed to create temporary file', { cause: err })
     }
 
-    // Defer deletion of the temporary files that are not needed anymore
+    // Defer deletion of the temporary files
     defer(async () => {
       vid.cleanup()
     })
 
-    // Fetch the remote video
-    try {
-      await fetchRemoteContent(createWriteStream(vid.path), {
-        acceptContentType: formatToHttpContentType(key.ifm),
-        url: new URL(key.url)
-      })
-    }
-    catch (err) {
-      throw new Error('failed to fetch remote resource', { cause: err })
+    // Determine the input path, url or stream
+    let input: string | ReadStream = vid.path
+    if (key.ifm == 'm3u8') {
+      input = await inputM3u8(key, opts)
+    } else {
+      input = await inputDefault(key, vid.path)
     }
 
     // Convert the video to a GIF
     try {
-      const inputStream = createReadStream(vid.path, { start: 0 })
       const outputStream = createWriteStream(gif.path, { start: 0 })
-      await convertVideoToGif(inputStream, outputStream, {
-        ffmpegInputFormat: formatToFfmpegFormat(key.ifm),
-        maxSize: opts.maxSize
-      })
+      await convertVideoToGif(input, outputStream, key, opts)
     }
     catch (err) {
       throw new Error('failed to convert resource to gif', { cause: err })

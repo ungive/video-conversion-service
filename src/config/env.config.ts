@@ -11,6 +11,8 @@ export const envSchema = Type.Object({
   SOURCE_HOSTNAME_WHITELIST: Type.String(),
   // Maximum width and height (size) of output videos in pixels
   MAXIMUM_OUTPUT_SIZE: Type.Integer(),
+  // Maximum frame rate of output videos
+  MAXIMUM_OUTPUT_FRAMERATE: Type.Integer(),
   // Username for creating a token
   TOKEN_AUTH_USERNAME: Type.String(),
   // Password for creating a token
