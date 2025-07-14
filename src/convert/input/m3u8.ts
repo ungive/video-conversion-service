@@ -24,10 +24,6 @@ export async function inputM3u8(
   parser.end()
   const targetSize = Math.min(key.osz || opts.maxSize, opts.maxSize)
   const targetFrameRate = Math.min(key.ofr || opts.maxFramerate, opts.maxFramerate)
-  console.log({
-    targetSize,
-    targetFrameRate,
-  })
   const variants: M3U8Variant[] =
     parser.manifest.playlists
       ?.filter(p => isM3U8PlaylistVariant.Check(p))
