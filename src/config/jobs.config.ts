@@ -262,9 +262,13 @@ export async function configureJobs(
     server.log.error(err, 'conversion worker error')
   })
 
-  conversionWorker.on('failed', (job, err) => {
+  conversionWorker.on('failed', async (job, err) => {
     const { id: jobId, data: data } = job || {} as any
     server.log.error({ jobId, data, err }, 'conversion job failed')
+    if (job) {
+      const conversionKey = job.data.conversionKey as ConversionKey
+      await queueCleanupJobForConversionKey(conversionKey)
+    }
   })
 
   // Cleans up any conversion results that are expired.
