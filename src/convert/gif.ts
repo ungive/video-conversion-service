@@ -79,16 +79,16 @@ export async function convertVideoToGif(
       server.log.debug('killing ffmpeg process')
       command.kill('SIGKILL')
     }
-    outputStream.once('close', onOutputStreamClose)
+    outputStream.once('error', onOutputStreamClose)
 
     // Make sure that the process is not unnecessarily killed after completion.
     command
       .on('end', () => {
-        outputStream.removeListener('close', onOutputStreamClose)
+        outputStream.removeListener('error', onOutputStreamClose)
         resolve()
       })
       .on('error', err => {
-        outputStream.removeListener('close', onOutputStreamClose)
+        outputStream.removeListener('error', onOutputStreamClose)
         reject(err)
       })
 
