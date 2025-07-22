@@ -48,8 +48,6 @@ export function waitForKey(
       }
     }
 
-    server.jobsSub.on('message', onMessage)
-
     if (timeout !== undefined) {
       timer = setTimeout(() => {
         cleanup()
