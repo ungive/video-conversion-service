@@ -131,3 +131,7 @@ export function asError(err: any): Error {
   if (err instanceof Error) return err
   return new Error(stringifyError(err))
 }
+
+export function randomInt(max: number, min = 0): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
