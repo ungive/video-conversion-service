@@ -44,7 +44,7 @@ export async function convertVideoToGif(
         `scale=w='if(gt(dar,${size}/${size}),min(${size},iw*sar),2*trunc(iw*sar*oh/ih/2))':h='if(gt(dar,${size}/${size}),2*trunc(ih*ow/iw/sar/2),min(${size},ih))'`,
         fps ? `fps=${fps}` : null,
         'split[s0][s1]',
-        `[s0]palettegen=max_colors=${colors}[p]`,
+        `[s0]fps=3,palettegen=max_colors=${colors}[p]`,
         '[s1][p]paletteuse=dither=bayer'
       ].filter(v => typeof v === 'string'))
       .outputFormat('gif')
