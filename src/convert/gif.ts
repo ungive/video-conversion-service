@@ -72,18 +72,28 @@ export async function convertVideoToGif(
       .on('progress', (progress) => {
         server.log.debug({ progress, conversionKey: key }, 'ffmpeg progress')
       })
-      .on('error', err => {
-        reject(err)
-      })
-
-    command.stream(outputStream)
 
     // Kill the ffmpeg process when the output stream is closed.
     // Note that this does not work on Windows.
-    outputStream.on('close', () => {
+    const onOutputStreamClose = () => {
       server.log.debug('killing ffmpeg process')
       command.kill('SIGKILL')
-    })
+    }
+    outputStream.once('close', onOutputStreamClose)
+
+    // Make sure that the process is not unnecessarily killed after completion.
+    command
+      .on('end', () => {
+        outputStream.removeListener('close', onOutputStreamClose)
+        resolve()
+      })
+      .on('error', err => {
+        outputStream.removeListener('close', onOutputStreamClose)
+        reject(err)
+      })
+
+    // Stream the incoming conversion result.
+    command.stream(outputStream)
   })
 }
 
