@@ -45,7 +45,8 @@ export const configSchema = Type.Object({
   env: envSchema,
   production: Type.Boolean({
     default: false
-  })
+  }),
+  debug: Type.Boolean()
 })
 
 export async function configureEnvironment(server: FastifyInstance) {
@@ -54,7 +55,8 @@ export async function configureEnvironment(server: FastifyInstance) {
     confKey: 'config',
     data: {
       env: envious(envSchema),
-      production: isProduction()
+      production: isProduction(),
+      debug: !isProduction() || process.env.DEBUG === '1'
     },
     schema: configSchema,
     dotenv: true
