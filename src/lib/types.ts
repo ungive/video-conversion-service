@@ -27,6 +27,8 @@ export const conversionKeySchema = Type.Object({
   ofm: outputFormatSchema,
   // Whether to preload the conversion result in the background
   pre: Type.Optional(Type.Boolean()),
+  // Whether to enabled real-time streaming at the configured frame rate
+  rts: Type.Optional(Type.Boolean()),
   // The target output size
   osz: Type.Optional(Type.Integer({ minimum: 1 })),
   // The target output frame rate

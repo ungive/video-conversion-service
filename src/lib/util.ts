@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import crypto from 'crypto'
+import { Readable } from 'stream'
 import tmp from 'tmp'
 
 const bcryptSaltRounds = 10
@@ -151,4 +152,11 @@ export function asError(err: any): Error {
 
 export function randomInt(max: number, min = 0): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function bufferToStream(buffer: Buffer): Readable {
+  const stream = new Readable();
+  stream.push(buffer);
+  stream.push(null);
+  return stream;
 }

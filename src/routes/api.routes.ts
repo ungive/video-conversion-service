@@ -30,7 +30,7 @@ export default async function routes(server: FastifyInstance) {
     },
     onRequest: server.basicAuth
   }, async (request, reply) => {
-    const { ifm, ofm, url, osz, ofr, out_gif_colors } = request.query
+    const { ifm, ofm, url, rts, osz, ofr, out_gif_colors } = request.query
 
     // Make sure the input and output format are different
     if (ifm as ContentFormat === ofm as ContentFormat) {
@@ -50,7 +50,7 @@ export default async function routes(server: FastifyInstance) {
       }
       return value
     })
-    const key = { ifm, ofm, url, osz, ofr, out_gif_colors } as ConversionKey
+    const key = { ifm, ofm, url, rts, osz, ofr, out_gif_colors } as ConversionKey
     server.tokens.set(token, key)
 
     // Calculate how long the token is valid
