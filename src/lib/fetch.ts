@@ -49,23 +49,24 @@ export async function fetchRemoteContent(
 }
 
 /**
- * Fetches and converts a remote video to a GIF file and returns the path.
+ * Fetches and converts a remote video to a GIF.
+ * Returns a readable stream that will receive the conversion result.
  *
  * @param server The server instance to work on.
  * @param url The url to fetch the video from.
- * @returns The path to the resulting GIF file.
+ * @returns A stream to which the conversion result is written.
  */
 export async function fetchConvertedContent(
   server: FastifyInstance,
   key: ConversionKey
-) {
+): Promise<Readable> {
   const url = new URL(key.url)
   // Check if the hostname of the URL is whitelisted
   if (!server.isHostnameWhitelisted(url.hostname)) {
     throw new Error("resource hostname is not whitelisted")
   }
   switch (key.ofm) {
-    case "gif": return fetchRemoteVideoToGif(key, {
+    case "gif": return await fetchRemoteVideoToGif(server, key, {
       maxSize: server.config.env.MAXIMUM_OUTPUT_SIZE,
       maxFramerate: server.config.env.MAXIMUM_OUTPUT_FRAMERATE,
     })

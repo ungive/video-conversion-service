@@ -3,16 +3,49 @@ import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import { configureEnvironment } from './config/env.config'
 import { configureServer } from './config/server.config'
 import tmp from 'tmp'
+import { isProduction } from './lib/util'
+
+const createFastify = (): FastifyInstance => {
+  return fastify({
+    logger: {
+      level: isProduction() ? 'info' : 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          translateTime: isProduction() ? 'yyyy-mm-dd HH:MM:ss.l' : 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+          colorize: true,
+          singleLine: true,
+          prettyPrint: false,
+        },
+      },
+      serializers: {
+        req(request) {
+          const { authorization, cookie, ...safeHeaders } = request.headers;
+          return {
+            method: request.method,
+            url: request.url,
+            headers: safeHeaders,
+          };
+        },
+        res(reply) {
+          return {
+            statusCode: reply.statusCode,
+          };
+        }
+      }
+    }
+  })
+}
 
 const createServer = async (): Promise<FastifyInstance> => {
-  const server = fastify({ logger: true })
-    .withTypeProvider<TypeBoxTypeProvider>()
+  const server = createFastify().withTypeProvider<TypeBoxTypeProvider>()
   await configureEnvironment(server)
   return server
 }
 
 const start = async () => {
-  // Make sure that temporary files are deleted on exit
+  // Make sure that any temporary files are deleted on exit
   tmp.setGracefulCleanup()
   // Create and start the server
   const server = await createServer()
@@ -30,4 +63,5 @@ const start = async () => {
     process.exit(1)
   }
 }
+
 start()

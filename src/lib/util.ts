@@ -119,3 +119,15 @@ export async function retry<T>(
     }
   }
 }
+
+export function stringifyError(err: any): string {
+  if (typeof err === 'undefined') return typeof undefined
+  if (err instanceof Error) return err.message
+  if (typeof err === 'string') return err
+  return JSON.stringify(err)
+}
+
+export function asError(err: any): Error {
+  if (err instanceof Error) return err
+  return new Error(stringifyError(err))
+}

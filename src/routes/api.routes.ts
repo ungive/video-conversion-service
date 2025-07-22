@@ -2,8 +2,7 @@ import { FastifyInstance } from "fastify"
 import { Type, type Static } from '@fastify/type-provider-typebox'
 import { conversionKeySchema, ConversionKey, ContentFormat, outputFormatSchema } from '../lib/types'
 import { retry, generateRandomToken } from "../lib/util"
-import fs, { createReadStream } from 'fs'
-import stringify from "json-stringify-deterministic"
+import { createConversionResultStream } from "../config/jobs.config"
 
 export default async function routes(server: FastifyInstance) {
 
@@ -57,18 +56,20 @@ export default async function routes(server: FastifyInstance) {
     // Calculate how long the token is valid
     const ttl = server.tokens.getRemainingTTL(token) / 1000
     if (!isFinite(ttl)) {
-      throw new Error('newly created token is not in cache')
-    }
-    if (!isFinite(ttl)) {
       throw new Error('remaining token cache key ttl is not finite')
     }
     const now = Math.floor(new Date().getTime() / 1000)
     const expires = now + ttl
 
-    // Start converting the video in the background
-    if (request.query.pre === true) {
-      server.cache.fetch(stringify(key))
-    }
+    // Start the conversion in the background.
+    // FIXME Do not ignore the "pre" query parameter. Some clients might
+    // never call the "/convert" endpoint and have a legitimate use for
+    // omitting or setting this query parameter to false.
+    // For now, leaving it always enable does not hurt.
+    await server.jobs.add('convert', {
+      conversionKey: key,
+      token
+    });
 
     // Send the token
     const baseUrl = server.config.env.SERVER_BASE_URL
@@ -116,30 +117,29 @@ export default async function routes(server: FastifyInstance) {
         throw new Error("the extension must be identical to the output format")
       }
 
-      // Fetch the URL from the cache or fetch it again
-      let file = await server.cache.fetch(stringify(key))
-      if (typeof file === 'undefined') {
-        throw new Error('cache fetch result is empty')
-      }
+      // Retrieve the conversion result stream
+      const stream = await createConversionResultStream(server, key, {
+        waitTimeout: server.config.env.CONVERSION_STREAM_HTTP_TIMEOUT
+      })
 
-      // Handle the case the temporary file might have been deleted
-      if (!fs.existsSync(file)) {
-        if (!server.cache.delete(stringify(key))) {
-          throw new Error('failed to delete stale entry from cache')
-        }
-        file = await server.cache.fetch(stringify(key))
-        if (typeof file === 'undefined') {
-          throw new Error('cache fetch result is empty')
-        }
-      }
+      // Ensure long-running requests can't keep conversion results alive
+      // for a long amount of time and possibly clog up the cache.
+      // FIXME This should respect the duration of the video.
+      // FIXME The duration of the video should be capped with a setting.
+      const timeout = setTimeout(() => {
+        server.log.warn({ token, conversionKey: key }, 'aborting stream on long-running request')
+        stream.destroy()
+      }, server.config.env.CONVERSION_MAX_STREAM_DURATION)
+      stream.once('close', () => {
+        clearTimeout(timeout)
+      })
 
-      // Send the response
       const filename = `video-${token.substring(0, 8)}.gif`
       return reply
         .code(200)
         .type('image/gif')
         .header('Content-Disposition', 'filename=' + filename)
-        .send(createReadStream(file))
+        .send(stream)
     }
   })
 }

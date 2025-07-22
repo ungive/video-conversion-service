@@ -9,6 +9,10 @@ export const envSchema = Type.Object({
   SERVER_BASE_URL: Type.String({ pattern: "(http|https):\/\/.+[^\/]$" }),
   // Comma-separated list of whitelisted hostnames
   SOURCE_HOSTNAME_WHITELIST: Type.String(),
+  // Redis hostname
+  REDIS_HOSTNAME: Type.String(),
+  // Redis port
+  REDIS_PORT: Type.Integer(),
   // Maximum width and height (size) of output videos in pixels
   MAXIMUM_OUTPUT_SIZE: Type.Integer(),
   // Maximum frame rate of output videos
@@ -23,18 +27,18 @@ export const envSchema = Type.Object({
   TOKEN_TTL: Type.Integer(),
   // Token TTL resolution in milliseconds (threshold for error)
   TOKEN_TTL_RESOLUTION: Type.Integer(),
-  // Cache TTL in milliseconds
-  CACHE_TTL: Type.Integer(),
-  // Cache TTL resolution in milliseconds (threshold for error)
-  CACHE_TTL_RESOLUTION: Type.Integer({ default: 1 }),
-  // Whether to automatically purge stale cache items after their TTL
-  CACHE_TTL_AUTOPURGE: Type.Boolean({ default: false }),
-  // Maximum number of cache entries (files)
-  CACHE_MAX_FILES: Type.Integer(),
-  // Maximum number of bytes in the cache (calculated with file sizes)
-  CACHE_MAX_SIZE_BYTES: Type.Integer(),
-  // Whether to allow stale cache entries to be served
-  CACHE_ALLOW_STALE: Type.Boolean({ default: false }),
+  // How many conversion jobs are allowed to run simultaneously
+  CONVERSION_JOB_CONCURRENCY: Type.Integer(),
+  // How long conversion results should be retained before purging
+  CONVERSION_RESULT_TTL: Type.Integer(),
+  // How long a conversion stream is allowed to take at a maximum
+  CONVERSION_MAX_STREAM_DURATION: Type.Integer(),
+  // Stream buffer size in bytes
+  CONVERSION_STREAM_BUFFER_SIZE: Type.Integer({
+    minimum: 1024
+  }),
+  // How long to wait in milliseconds for a conversion stream to start
+  CONVERSION_STREAM_HTTP_TIMEOUT: Type.Integer(),
 })
 
 export const configSchema = Type.Object({

@@ -5,6 +5,8 @@ import { LRUCache } from 'lru-cache'
 import { ConversionKey } from '../src/routes/api.routes'
 import { CacheKey } from '../src/config/cache.config'
 import { StringifiedJSON } from '../src/lib/types'
+import { Queue, Worker, QueueEvents } from 'bullmq';
+import { Redis } from 'ioredis';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -13,5 +15,8 @@ declare module 'fastify' {
     isHostnameWhitelisted: (hostname: string) => boolean
     tokens: LRUCache<string, ConversionKey>
     cache: LRUCache<StringifiedJSON, string>
+    jobs: Queue
+    jobsSub: Redis
+    jobsConnection: Redis
   }
 }

@@ -2,3 +2,7 @@
 /dist
 /.vscode
 .env*
+/out
+docker-compose.yaml
+Dockerfile
+*.md

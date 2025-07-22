@@ -1,11 +1,57 @@
+name: video-conversion-service
+
+networks:
+  network:
+
 services:
-  api:
+
+  video:
     build:
       context: .
       dockerfile: ./Dockerfile
     restart: unless-stopped
     ports:
-      - 3000:80
+      - 3000:3000
     env_file: .env
-    environment:
-      - NODE_ENV=production
+    networks:
+      - network
+    hostname: ${COMPOSE_PROJECT_NAME}_video
+    depends_on:
+      redis-healthcheck:
+        condition: service_healthy
+
+  redis:
+    image: redis:8.0-alpine
+    restart: unless-stopped
+    command: ["redis-server", "/usr/local/etc/redis.conf"]
+    ports:
+      - 6379:6379
+    volumes:
+      - ./deploy/redis.conf:/usr/local/etc/redis.conf
+    networks:
+      - network
+    hostname: ${COMPOSE_PROJECT_NAME}_redis
+
+  redis-healthcheck:
+    image: goodsmileduck/redis-cli:latest
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "video-conversion-service_redis", "-p", "6379", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    command: "sh -c 'while :; do sleep 2073600; done'"
+    networks:
+      - network
+
+  redis-metrics:
+    image: oliver006/redis_exporter:latest
+    command:
+      - '--redis.addr=redis://video-conversion-service_redis:6379'
+    networks:
+      - network
+    hostname: ${COMPOSE_PROJECT_NAME}_redis-metrics
+    depends_on:
+      redis-healthcheck:
+        condition: service_healthy

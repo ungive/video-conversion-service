@@ -1,10 +1,10 @@
-import { createTempFile, deferrable, TmpFile } from "../lib/util"
-import { createWriteStream, ReadStream } from "fs"
+import { ReadStream } from "fs"
 import { ConversionKey, formatToFfmpegFormat, VideoConversionOptions } from "../lib/types"
-import internal, { Readable } from "stream"
+import { Readable, PassThrough, Writable } from "stream"
 import ffmpeg from 'fluent-ffmpeg'
-import { inputDefault } from './input/default'
 import { inputM3u8 } from './input/m3u8'
+import { FastifyInstance } from "fastify"
+import { asError } from "../lib/util"
 
 /**
  * Converts a given video input to a GIF.
@@ -13,20 +13,29 @@ import { inputM3u8 } from './input/m3u8'
  * @param opts Video conversion options
  */
 export async function convertVideoToGif(
+  server: FastifyInstance,
   inputStream: string | Readable,
-  outputStream: internal.Writable,
+  outputStream: Writable,
   key: ConversionKey,
   opts: VideoConversionOptions,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
+
     const size = Math.max(1, Math.min(key.osz || opts.maxSize, opts.maxSize))
     const fps = Math.max(1, Math.min(key.ofr || opts.maxFramerate, opts.maxFramerate))
     const colors = key.out_gif_colors || 32
+
     // Useful resources:
     // https://stackoverflow.com/a/43116993/6748004
     // https://superuser.com/a/556031
     // https://superuser.com/a/1695537
-    ffmpeg()
+    // FIXME High CPU usage, but using the "-re" input flag slows down
+    // first frame generation immensely. we have to separate this into
+    // multiple commands, most likely
+
+    // FIXME can't stop the command? kill() does nothing,
+
+    const command = ffmpeg()
       .input(inputStream)
       .inputFormat(formatToFfmpegFormat(key.ifm))
       .videoFilters([
@@ -40,6 +49,12 @@ export async function convertVideoToGif(
       .on('end', () => {
         resolve()
       })
+      .on('start', (command: string) => {
+        server.log.debug({ command }, "ffmpeg command")
+      })
+      .on('progress', (progress) => {
+        server.log.debug({ progress, conversionKey: key }, 'ffmpeg progress')
+      })
       .on('error', err => {
         reject(err)
       })
@@ -48,53 +63,40 @@ export async function convertVideoToGif(
 }
 
 /**
- * Converts a remote video to a GIF and returns the file path.
- * Ensures that the resulting GIF is no larger than the given maximum size.
+ * Converts a remote video to a GIF and streams the conversion result.
+ *
  * @param url The URL to fetch the remote video from.
  * @param opts Options for video conversion.
  * @returns The path to the resulting GIF file.
  */
 export async function fetchRemoteVideoToGif(
+  server: FastifyInstance,
   key: ConversionKey,
   opts: VideoConversionOptions
-): Promise<string> {
-  return deferrable(async (defer) => {
+): Promise<Readable> {
 
-    // Create temporary files for the video and resulting GIF
-    let vid: TmpFile
-    let gif: TmpFile
+  // Determine the input path, url or stream
+  let input: string | ReadStream = key.url
+  if (key.ifm == 'm3u8') {
+    input = await inputM3u8(key, opts)
+  }
+  if (input === undefined) {
+    throw new Error('missing input')
+  }
+
+  const stream = new PassThrough({
+    highWaterMark: server.config.env.CONVERSION_STREAM_BUFFER_SIZE
+  });
+
+  // Write to the stream in the background and propagate any errors.
+  (async () => {
     try {
-      [vid, gif] = await Promise.all([
-        createTempFile(),
-        createTempFile(),
-      ])
+      await convertVideoToGif(server, input, stream, key, opts)
     }
     catch (err) {
-      throw new Error('failed to create temporary file', { cause: err })
+      stream.destroy(asError(err))
     }
+  })()
 
-    // Defer deletion of the temporary files
-    defer(async () => {
-      vid.cleanup()
-    })
-
-    // Determine the input path, url or stream
-    let input: string | ReadStream = vid.path
-    if (key.ifm == 'm3u8') {
-      input = await inputM3u8(key, opts)
-    } else {
-      input = await inputDefault(key, vid.path)
-    }
-
-    // Convert the video to a GIF
-    try {
-      const outputStream = createWriteStream(gif.path, { start: 0 })
-      await convertVideoToGif(input, outputStream, key, opts)
-    }
-    catch (err) {
-      throw new Error('failed to convert resource to gif', { cause: err })
-    }
-
-    return gif.path
-  })
+  return stream
 }
