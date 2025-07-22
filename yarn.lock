@@ -223,13 +223,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/fluent-ffmpeg@^2.1.26":
-  version "2.1.27"
-  resolved "https://registry.yarnpkg.com/@types/fluent-ffmpeg/-/fluent-ffmpeg-2.1.27.tgz#c4eac6fbda30bb6316d2220c8faf54f48db0812d"
-  integrity sha512-QiDWjihpUhriISNoBi2hJBRUUmoj/BMTYcfz+F+ZM9hHWBYABFAE6hjP/TbCZC0GWwlpa3FzvHH9RzFeRusZ7A==
-  dependencies:
-    "@types/node" "*"
-
 "@types/m3u8-parser@^7.2.2":
   version "7.2.2"
   resolved "https://registry.yarnpkg.com/@types/m3u8-parser/-/m3u8-parser-7.2.2.tgz#66c6753f3b75cfafd236a5aba94bf761d7b3c930"
@@ -719,10 +712,8 @@ find-my-way@^9.0.0:
     fast-querystring "^1.0.0"
     safe-regex2 "^5.0.0"
 
-fluent-ffmpeg@^2.1.3:
+"fluent-ffmpeg@file:vendor/node-fluent-ffmpeg":
   version "2.1.3"
-  resolved "https://registry.yarnpkg.com/fluent-ffmpeg/-/fluent-ffmpeg-2.1.3.tgz#d6846be257777844249a4adeb320f25326d239f3"
-  integrity sha512-Be3narBNt2s6bsaqP6Jzq91heDgOEaDCJAXcE3qcma/EJBSy5FB4cvO31XBInuAuKBx8Kptf8dkhjK0IOru39Q==
   dependencies:
     async "^0.2.9"
     which "^1.1.1"

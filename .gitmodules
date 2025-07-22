@@ -1,0 +1,3 @@
+[submodule "vendor/node-fluent-ffmpeg"]
+	path = vendor/node-fluent-ffmpeg
+	url = git@github.com:ungive/node-fluent-ffmpeg.git

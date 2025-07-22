@@ -6,7 +6,8 @@
   "files": [
     "src/index.ts",
     "src/routes/api.routes.ts",
-    "typings/global.d.ts"
+    "typings/global.d.ts",
+    "typings/fluent-ffmpeg/index.d.ts"
   ],
   "compilerOptions": {
     "typeRoots": [
