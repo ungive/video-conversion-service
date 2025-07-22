@@ -198,6 +198,9 @@ export async function configureJobs(
       throw err
     }
 
+    // Let streams fail silently
+    stream.on('error', () => { })
+
     // Make sure the stream is destroyed on failure.
     failTasks.push(async (err) => {
       server.log.debug('fail task: destroying stream')
