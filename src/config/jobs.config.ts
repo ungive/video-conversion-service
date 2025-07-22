@@ -254,10 +254,8 @@ export async function configureJobs(
   conversionWorker.on('completed', async (job) => {
     // Whenever a conversion has completed, which includes cases where
     // the conversion result already existed and the conversion job stopped.
-    if (job.id !== undefined) {
-      const conversionKey = job.data.conversionKey as ConversionKey
-      await queueCleanupJobForConversionKey(conversionKey)
-    }
+    const conversionKey = job.data.conversionKey as ConversionKey
+    await queueCleanupJobForConversionKey(conversionKey)
   })
 
   conversionWorker.on('error', (err) => {
