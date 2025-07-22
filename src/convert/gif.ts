@@ -33,8 +33,6 @@ export async function convertVideoToGif(
     // first frame generation immensely. we have to separate this into
     // multiple commands, most likely
 
-    // FIXME can't stop the command? kill() does nothing,
-
     const command = ffmpeg()
       .input(inputStream)
       .inputFormat(formatToFfmpegFormat(key.ifm))
@@ -58,7 +56,15 @@ export async function convertVideoToGif(
       .on('error', err => {
         reject(err)
       })
-      .stream(outputStream)
+
+    command.stream(outputStream)
+
+    // Kill the ffmpeg process when the output stream is closed.
+    // Note that this does not work on Windows.
+    outputStream.on('close', () => {
+      server.log.debug('killing ffmpeg process')
+      command.kill('SIGKILL')
+    })
   })
 }
 
