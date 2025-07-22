@@ -140,8 +140,20 @@ export async function configureJobs(
     const readKey = readKeyFor(conversionKey)
     const dataKey = dataKeyFor(conversionKey)
 
-    const storeError = async (err: any) => {
+    // Simple defer-style fail task accumulation.
+    // Tasks are run in reverse order when fail() is called.
+    const failTasks: ((err: any) => {})[] = []
+    const fail = async (err: any) => {
+      for (const task of failTasks.toReversed()) {
+        try {
+          task(err)
+        }
+        catch (err) {
+          server.log.error(err, 'error in fail task')
+        }
+      }
       try {
+        // Make the error available for consumers.
         await connection.set(errorKeyFor(conversionKey), stringifyError(err))
       }
       catch { }
@@ -154,6 +166,12 @@ export async function configureJobs(
       server.log.debug({ writeKey }, 'write key already exists')
       return
     }
+
+    // Make sure that we're not in writing state anymore on failure.
+    failTasks.push(async () => {
+      server.log.debug('fail task: setting write key to 0')
+      await connection.set(writeKey, 0)
+    })
 
     server.log.info({
       jobId: job.id,
@@ -170,9 +188,15 @@ export async function configureJobs(
       stream = await fetchConvertedContent(server, conversionKey)
     }
     catch (err) {
-      storeError('failed to create conversion stream')
+      fail('failed to create conversion stream')
       throw err
     }
+
+    // Make sure the stream is destroyed on failure.
+    failTasks.push(async (err) => {
+      server.log.debug('fail task: destroying stream')
+      stream.destroy(asError(err))
+    })
 
     try {
       // Wait for the stream to be readable, then set the read key.
@@ -185,13 +209,19 @@ export async function configureJobs(
       }
     }
     catch (err) {
-      stream.destroy(asError(err))
-      storeError('failed to wait for conversion stream data')
+      fail('failed to wait for conversion stream data')
       throw err
     }
 
     // Stream the chunks to the database.
     const eof = async () => await connection.xadd(dataKey, '*', 'eof', '1')
+
+    // Make sure that eof is set for the data on any errors.
+    failTasks.push(async () => {
+      server.log.debug('fail task: writing eof for data')
+      eof()
+    })
+
     try {
       for await (const chunk of stream) {
         await connection.xadd(dataKey, '*', 'chunk', chunk.toString('latin1'))
@@ -203,13 +233,7 @@ export async function configureJobs(
         // This can contain chunk data, we don't want to log that.
         delete (err as any).command['args']
       }
-      try {
-        // Make sure that eof is set for the data on any errors.
-        await eof()
-      }
-      catch { }
-      stream.destroy(asError(err))
-      storeError('failed to convert video')
+      fail('failed to convert video')
       throw err
     }
 
