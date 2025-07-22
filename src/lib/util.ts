@@ -72,7 +72,6 @@ export async function deferrable
 
 export interface TmpFile {
   path: string
-  fd: number
   cleanup: () => void
 }
 
@@ -82,11 +81,12 @@ export interface TmpFile {
  */
 export async function createTempFile(): Promise<TmpFile> {
   return new Promise<TmpFile>((resolve, reject) => {
-    tmp.file((err, path, fd, cleanup) => {
+    tmp.file({
+      discardDescriptor: true
+    }, (err, path, fd, cleanup) => {
       if (err) return reject(err)
       resolve({
         path,
-        fd,
         cleanup
       })
     })
