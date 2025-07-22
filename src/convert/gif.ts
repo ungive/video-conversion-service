@@ -7,15 +7,58 @@ import { FastifyInstance } from "fastify"
 import { asError, randomInt } from "../lib/util"
 import { AsyncCounter } from "../lib/async-counter"
 
+/**
+ * Converts a remote video to a GIF and streams the conversion result.
+ *
+ * @param url The URL to fetch the remote video from.
+ * @param opts Options for video conversion.
+ * @returns The path to the resulting GIF file.
+ */
+export async function fetchRemoteVideoToGif(
+  server: FastifyInstance,
+  key: ConversionKey,
+  opts: VideoConversionOptions
+): Promise<Readable> {
+
+  // Determine the input path, url or stream
+  let input: string | ReadStream = key.url
+  if (key.ifm == 'm3u8') {
+    input = await inputM3u8(key, opts)
+  }
+  if (input === undefined) {
+    throw new Error('missing input')
+  }
+
+  const stream = new PassThrough({
+    highWaterMark: server.config.env.CONVERSION_STREAM_BUFFER_SIZE
+  });
+
+  // Write to the stream in the background and propagate any errors.
+  (async () => {
+    try {
+      await convertVideoToGif1(server, input, stream, key, opts)
+    }
+    catch (err) {
+      stream.destroy(asError(err))
+    }
+  })()
+
+  return stream
+}
+
 const ffmpegProcessCounter = new AsyncCounter()
 
 /**
- * Converts a given video input to a GIF.
+ * Converts a video input stream to a GIF in a single ffmpeg pass.
+ *
+ * Pros: Fast. Good when the video is large and streaming conversion is desired.
+ * Cons: Uncapped/high CPU usage. Only fast, no real-time streaming.
+ *
  * @param inputStream The input stream to read from
  * @param outputStream The ouput stream to write to
  * @param opts Video conversion options
  */
-export async function convertVideoToGif(
+export async function convertVideoToGif1(
   server: FastifyInstance,
   inputStream: string | Readable,
   outputStream: Writable,
@@ -95,43 +138,4 @@ export async function convertVideoToGif(
     // Stream the incoming conversion result.
     command.stream(outputStream)
   })
-}
-
-/**
- * Converts a remote video to a GIF and streams the conversion result.
- *
- * @param url The URL to fetch the remote video from.
- * @param opts Options for video conversion.
- * @returns The path to the resulting GIF file.
- */
-export async function fetchRemoteVideoToGif(
-  server: FastifyInstance,
-  key: ConversionKey,
-  opts: VideoConversionOptions
-): Promise<Readable> {
-
-  // Determine the input path, url or stream
-  let input: string | ReadStream = key.url
-  if (key.ifm == 'm3u8') {
-    input = await inputM3u8(key, opts)
-  }
-  if (input === undefined) {
-    throw new Error('missing input')
-  }
-
-  const stream = new PassThrough({
-    highWaterMark: server.config.env.CONVERSION_STREAM_BUFFER_SIZE
-  });
-
-  // Write to the stream in the background and propagate any errors.
-  (async () => {
-    try {
-      await convertVideoToGif(server, input, stream, key, opts)
-    }
-    catch (err) {
-      stream.destroy(asError(err))
-    }
-  })()
-
-  return stream
 }
