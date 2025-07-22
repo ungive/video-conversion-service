@@ -45,11 +45,28 @@ export async function deferrable
   (func: (defer: (f: () => Promise<void>) => void) => Promise<any>): Promise<any> {
 
   let queue: (() => Promise<void>)[] = []
-  const result = await func((f) => { queue.push(f) })
-  // Call deferred functions in reverse order
+  let err: Error | undefined
+  let result: any
+
+  try {
+    result = await func((f) => {
+      queue.push(f)
+    })
+  }
+  catch (error) {
+    err = asError(error)
+  }
+
+  // Call deferred functions in reverse order.
   for (let i = queue.length - 1; i >= 0; i--) {
     await queue[i]()
   }
+
+  // Propagate the error after calling all deferred functions.
+  if (err !== undefined) {
+    throw err
+  }
+
   return result
 }
 
