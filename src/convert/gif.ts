@@ -4,7 +4,10 @@ import { Readable, PassThrough, Writable } from "stream"
 import ffmpeg from 'fluent-ffmpeg'
 import { inputM3u8 } from './input/m3u8'
 import { FastifyInstance } from "fastify"
-import { asError } from "../lib/util"
+import { asError, randomInt } from "../lib/util"
+import { AsyncCounter } from "../lib/async-counter"
+
+const ffmpegProcessCounter = new AsyncCounter()
 
 /**
  * Converts a given video input to a GIF.
@@ -33,6 +36,7 @@ export async function convertVideoToGif(
     // first frame generation immensely. we have to separate this into
     // multiple commands, most likely
 
+    const instanceLabel = randomInt(1024 * 64, 1)
     const command = ffmpeg()
       .input(inputStream)
       .inputFormat(formatToFfmpegFormat(key.ifm))
@@ -44,11 +48,26 @@ export async function convertVideoToGif(
         '[s1][p]paletteuse=dither=bayer'
       ].filter(v => typeof v === 'string'))
       .outputFormat('gif')
-      .on('end', () => {
-        resolve()
+      .on('start', async (command: string) => {
+        const processCount = await ffmpegProcessCounter.increment()
+        server.log.info({
+          instanceLabel,
+          totalProcesses: processCount,
+          conversionKey: key,
+          command
+        }, "ffmpeg spawned")
       })
-      .on('start', (command: string) => {
-        server.log.debug({ command }, "ffmpeg command")
+      .on('end', async () => {
+        const processCount = await ffmpegProcessCounter.decrement()
+        server.log.info({
+          instanceLabel,
+          totalProcesses: processCount
+        }, 'ffmpeg process terminated')
+        if (processCount < 0) {
+          server.log.warn({
+            value: processCount
+          }, 'ffmpeg process counter is negative')
+        }
       })
       .on('progress', (progress) => {
         server.log.debug({ progress, conversionKey: key }, 'ffmpeg progress')
