@@ -390,8 +390,10 @@ declare module 'fluent-ffmpeg' {
        *
        * @event FfmpegCommand#start
        * @param command ffmpeg command line
+       * @param pid the process identifier
        */
-      on(event: "start", listener: (command: string) => void): this;
+      on(event: "start", listener: (command: string, pid: number | null) => void): this;
+
 
       /**
        * Emitted when ffmpeg reports progress information
@@ -456,8 +458,9 @@ declare module 'fluent-ffmpeg' {
        * @param error error object, with optional properties 'inputStreamError' / 'outputStreamError' for errors on their respective streams
        * @param stdout ffmpeg stdout, unless outputting to a stream
        * @param stderr ffmpeg stderr
+       * @param pid the process identifier
        */
-      on(event: "error", listener: (error: Error, stdout: string | null, stderr: string | null) => void): this;
+      on(event: "error", listener: (error: Error, stdout: string | null, stderr: string | null, pid: number | null) => void): this;
 
       /**
        * Emitted when a taking screenshots
@@ -473,8 +476,9 @@ declare module 'fluent-ffmpeg' {
        * @event FfmpegCommand#end
        * @param stdout ffmpeg stdout when not outputting to a stream, null otherwise
        * @param stderr ffmpeg stderr
+       * @param pid the process identifier
        */
-      on(event: "end", listener: (stdout: string | null, stderr: string | null) => void): this;
+      on(event: "end", listener: (stdout: string | null, stderr: string | null, pid: number | null) => void): this;
 
       // recipes
       saveToFile(output: string): FfmpegCommand;

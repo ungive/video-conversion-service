@@ -2,6 +2,8 @@
 
 import * as events from "events";
 
+declare module 'fluentffmpeg';
+
 declare namespace Ffmpeg {
   class FfmpegCommand extends events.EventEmitter {
     /**
