@@ -281,14 +281,15 @@ export async function configureJobs(
       local write = redis.call("get", KEYS[1])
       local read = redis.call("get", KEYS[2])
       if (not write or write == "0") and (not read or read == "0") then
-        redis.call("del", KEYS[3], KEYS[1], KEYS[2])
+        redis.call("del", KEYS[3], KEYS[1], KEYS[2], KEYS[4])
         return 1
       end
       return 0`,
-      3,
+      4,
       writeKeyFor(conversionKey),
       readKeyFor(conversionKey),
-      dataKeyFor(conversionKey)
+      dataKeyFor(conversionKey),
+      errorKeyFor(conversionKey)
     )
 
     if (result !== 1) {
