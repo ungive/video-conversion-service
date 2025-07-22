@@ -54,6 +54,9 @@ Optional query parameters:
   instead of downloading and starting conversion on the first request.
   If requests to the convert endpoint are delayed,
   setting this is recommended
+- `rts`: Enables real-time streaming which limits the streaming
+  framerate to the target output frame rate (see `ofr`).
+  This reduces stress on the server and should be set, if possible.
 - `osz`: The target output video size. If not specified,
   the original video size or the server's maximum output size
   is used, whichever is smaller
