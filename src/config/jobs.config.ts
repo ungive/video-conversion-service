@@ -142,11 +142,11 @@ export async function configureJobs(
 
     // Simple defer-style fail task accumulation.
     // Tasks are run in reverse order when fail() is called.
-    const failTasks: ((err: any) => {})[] = []
+    const failTasks: ((err: Error) => {})[] = []
     const fail = async (err: any) => {
       for (const task of failTasks.toReversed()) {
         try {
-          task(err)
+          task(asError(err))
         }
         catch (err) {
           server.log.error(err, 'error in fail task')
@@ -180,7 +180,13 @@ export async function configureJobs(
     }, 'converting video')
 
     // Subscribe to notifications for relevant cache keys.
-    await subscribeToKeysFor(conversionKey)
+    try {
+      await subscribeToKeysFor(conversionKey)
+    }
+    catch (err) {
+      fail('failed to subscribe to conversion cache key changes')
+      throw err
+    }
 
     // Get a readable stream for the converted content.
     let stream: Readable
@@ -195,7 +201,7 @@ export async function configureJobs(
     // Make sure the stream is destroyed on failure.
     failTasks.push(async (err) => {
       server.log.debug('fail task: destroying stream')
-      stream.destroy(asError(err))
+      stream.destroy(err)
     })
 
     try {
@@ -233,7 +239,7 @@ export async function configureJobs(
         // This can contain chunk data, we don't want to log that.
         delete (err as any).command['args']
       }
-      fail('failed to convert video')
+      fail('conversion data streaming failed')
       throw err
     }
 
