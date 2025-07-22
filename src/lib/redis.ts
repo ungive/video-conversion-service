@@ -19,7 +19,6 @@ export function waitForKey(
       if (!finished) {
         finished = true
         clearTimeout(timer)
-        console.log('unregistering message handler for subs')
         server.jobsSub.removeListener('message', onMessage)
         signal?.removeEventListener('abort', onAbort)
       }
@@ -44,13 +43,11 @@ export function waitForKey(
     }
 
     const onMessage = (channel: string, message: string) => {
-      console.log({ channel, message })
       if (channel === keyChannel && message === 'set') {
         done()
       }
     }
 
-    console.log('registering message handler for subs')
     server.jobsSub.on('message', onMessage)
 
     if (timeout !== undefined) {
@@ -61,7 +58,6 @@ export function waitForKey(
     }
 
     server.jobsConnection.exists(key).then((exists) => {
-      console.debug('sub exists?', exists)
       if (exists) {
         done(true)
       }
