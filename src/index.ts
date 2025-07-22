@@ -8,7 +8,7 @@ import { isProduction } from './lib/util'
 const createFastify = (): FastifyInstance => {
   return fastify({
     logger: {
-      level: isProduction() ? 'info' : 'debug',
+      level: isProduction() && process.env.DEBUG !== '1' ? 'info' : 'debug',
       transport: {
         target: 'pino-pretty',
         options: {
