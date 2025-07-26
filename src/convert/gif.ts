@@ -69,6 +69,7 @@ export async function convertVideoToGif2(
   opts: VideoConversionOptions,
 ): Promise<void> {
 
+  const threads = Math.max(1, Math.min(128, server.config.env.CONVERSION_FFMPEG_THREADS))
   const size = Math.max(1, Math.min(key.osz || opts.maxSize, opts.maxSize))
   const fps = key.ofr && Math.max(1, Math.min(key.ofr, opts.maxFramerate))
   const colors = key.out_gif_colors || 32
@@ -129,6 +130,7 @@ export async function convertVideoToGif2(
         ].filter(v => typeof v === 'string'))
         .format('mp4')
         .output(video.path)
+        .outputOptions('-threads', String(threads))
         .on('start', async command => {
           await ffmpegProcessCounter.increment()
           server.log.debug({ instanceLabel, command }, 'ffmpeg multi-stage #1')

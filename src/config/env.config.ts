@@ -29,6 +29,8 @@ export const envSchema = Type.Object({
   TOKEN_TTL_RESOLUTION: Type.Integer(),
   // How many conversion jobs are allowed to run simultaneously
   CONVERSION_JOB_CONCURRENCY: Type.Integer(),
+  // How many threads ffmpeg is allowed to use for conversion
+  CONVERSION_FFMPEG_THREADS: Type.Integer(),
   // How long conversion results should be retained before purging
   CONVERSION_RESULT_TTL: Type.Integer(),
   // How long a conversion stream is allowed to take at a maximum
